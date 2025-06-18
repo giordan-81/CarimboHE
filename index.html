@@ -321,16 +321,16 @@ Ação Solucionadora: ${acao}`;
 
   window.onload = () => {
     let tecnicos = carregarLista(chaveTecnicos);
-    if (!tecnicos.includes('Alexandre Giordan Marafigo')) {
-      tecnicos.push('Alexandre Giordan Marafigo');
-      salvarLista(chaveTecnicos, tecnicos);
-    }
-    popularSelect('tecnicoSelect', tecnicos, 'Insira o nome do técnico');
+    //if (!tecnicos.includes('Alexandre Giordan Marafigo')) {
+    //  tecnicos.push('Alexandre Giordan Marafigo');
+   //   salvarLista(chaveTecnicos, tecnicos);
+   // }
+   // popularSelect('tecnicoSelect', tecnicos, 'Insira o nome do técnico');
 
-    let sites = carregarLista(chaveSites);
-    if (!sites.includes('SC_Z55')) {
-      sites.push('SC_Z55');
-      salvarLista(chaveSites, sites);
+   // let sites = carregarLista(chaveSites);
+   // if (!sites.includes('SC_Z55')) {
+   //   sites.push('SC_Z55');
+    //  salvarLista(chaveSites, sites);
     }
     popularSelect('siteSelect', sites, 'Insira o site');
 
