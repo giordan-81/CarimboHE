@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carimbo HE - Formulário</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      background: #f7f7f7;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .form-container {
+      background: white;
+      padding: 20px;
+      max-width: 100%;
+      border: 2px solid #222;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.5;
+      margin: auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    textarea,
+    select {
+      width: 100%;
+      font-family: monospace;
+      font-size: 1em;
+      margin-bottom: 12px;
+      padding: 8px;
+    }
+
+    select option.placeholder {
+      color: #999;
+      font-style: italic;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 1em;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .linha-flex {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+    }
+
+    .linha-flex input,
+    .linha-flex select {
+      margin-top: 5px;
+    }
+
+    .dupla {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .dupla > div {
+      flex: 1 1 45%;
+      min-width: 140px;
+    }
+
+    #output {
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border: 2px solid #222;
+      font-family: 'Courier New', Courier, monospace;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .acao-solucionadora-container textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <meta name="theme-color" content="#222222">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
+  </script>
+</head>
+<body>
+
+<h2>Controle e Registro HE - Carimbo</h2>
+
+<div class="form-container">
+  <label for="taos">TA/OS:</label>
+  <input type="text" id="taos" placeholder="Digite o TA/OS" />
+
+  <div class="linha-flex">
+    <label for="tecnicoSelect">Técnico:</label>
+    <select id="tecnicoSelect"></select>
+    <input type="text" id="novoTecnico" placeholder="Novo técnico" />
+    <button type="button" onclick="adicionarTecnico()">Adicionar Técnico</button>
+  </div>
+
+  <div class="linha-flex">
+    <label for="siteSelect">Site:</label>
+    <select id="siteSelect"></select>
+    <input type="text" id="novoSite" placeholder="Novo site" />
+    <button type="button" onclick="adicionarSite()">Adicionar Site</button>
+  </div>
+
+  <div class="dupla">
+    <div>
+      <label for="dataInicio">Data Início:</label>
+      <input type="date" id="dataInicio" />
+    </div>
+    <div>
+      <label for="horaInicio">Hora Início:</label>
+      <input type="time" id="horaInicio" onchange="calcularTotalHE()" />
+    </div>
+  </div>
+
+  <div class="dupla">
+    <div>
+      <label for="dataFim">Data Fim:</label>
+      <input type="date" id="dataFim" />
+    </div>
+    <div>
+      <label for="horaFim">Hora Fim:</label>
+      <input type="time" id="horaFim" onchange="calcularTotalHE()" />
+    </div>
+  </div>
+
+  <label for="totalHE">Total HE:</label>
+  <input type="text" id="totalHE" readonly />
+
+  <label for="acaoSolucionadora">Ação Solucionadora:</label>
+  <textarea id="acaoSolucionadora" rows="3" placeholder="Descreva a ação solucionadora"></textarea>
+
+  <button onclick="gerarCarimbo()">Gerar carimbo</button>
+</div>
+
+<pre id="output"></pre>
+<button id="btnWhatsapp" style="display:none; margin-top: 10px;" onclick="compartilharWhatsapp()">Compartilhar via WhatsApp</button>
+
+
+
+<script>
+  const chaveTecnicos = 'listaTecnicosHE';
+  const chaveSites = 'listaSitesHE';
+
+  function carregarLista(chave) {
+    let lista = JSON.parse(localStorage.getItem(chave));
+    return Array.isArray(lista) ? lista : [];
+  }
+
+  function salvarLista(chave, lista) {
+    localStorage.setItem(chave, JSON.stringify(lista));
+  }
+
+  function popularSelect(id, lista, placeholderText) {
+    const select = document.getElementById(id);
+    select.innerHTML = '';
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = placeholderText;
+    placeholderOption.classList.add('placeholder');
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    select.appendChild(placeholderOption);
+
+    lista.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item;
+      option.textContent = item;
+      select.appendChild(option);
+    });
+  }
+
+  function adicionarItem(chave, inputId, selectId, nomeCampo, placeholderText) {
+    const input = document.getElementById(inputId);
+    const valor = input.value.trim();
+    if (!valor) {
+      alert(`Digite o nome do ${nomeCampo} para adicionar.`);
+      return;
+    }
+    let lista = carregarLista(chave);
+    if (lista.includes(valor)) {
+      alert(`${nomeCampo} já está na lista.`);
+      input.value = '';
+      return;
+    }
+    lista.push(valor);
+    salvarLista(chave, lista);
+    popularSelect(selectId, lista, placeholderText);
+    document.getElementById(selectId).value = valor;
+    input.value = '';
+    alert(`${nomeCampo} "${valor}" adicionado.`);
+  }
+
+  function adicionarTecnico() {
+    adicionarItem(chaveTecnicos, 'novoTecnico', 'tecnicoSelect', 'Técnico', 'Insira o nome do técnico');
+  }
+
+  function adicionarSite() {
+    adicionarItem(chaveSites, 'novoSite', 'siteSelect', 'Site', 'Insira o site');
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  function calcularTotalHE() {
+    const dataInicioStr = document.getElementById('dataInicio').value;
+    const horaInicioStr = document.getElementById('horaInicio').value;
+    const dataFimStr = document.getElementById('dataFim').value;
+    const horaFimStr = document.getElementById('horaFim').value;
+
+    if (!dataInicioStr || !horaInicioStr || !dataFimStr || !horaFimStr) {
+      document.getElementById('totalHE').value = '';
+      return;
+    }
+
+    const inicio = new Date(`${dataInicioStr}T${horaInicioStr}:00`);
+    const fim = new Date(`${dataFimStr}T${horaFimStr}:00`);
+
+    let diffMs = fim - inicio;
+    if (diffMs < 0) {
+      alert('A data/hora fim não pode ser anterior à data/hora início.');
+      document.getElementById('totalHE').value = '';
+      return;
+    }
+
+    const diffHoras = diffMs / (1000 * 60 * 60);
+    const h = Math.floor(diffHoras);
+    const m = Math.round((diffHoras - h) * 60);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+
+    document.getElementById('totalHE').value = `${hh}:${mm}`;
+  }
+
+  function gerarCarimbo() {
+    const taos = document.getElementById('taos').value.trim();
+    const tecnico = document.getElementById('tecnicoSelect').value.trim();
+    const site = document.getElementById('siteSelect').value.trim();
+    const dataInicio = document.getElementById('dataInicio').value.trim();
+    const horaInicio = document.getElementById('horaInicio').value.trim();
+    const dataFim = document.getElementById('dataFim').value.trim();
+    const horaFim = document.getElementById('horaFim').value.trim();
+    const totalHE = document.getElementById('totalHE').value.trim();
+    const acao = document.getElementById('acaoSolucionadora').value.trim();
+
+    if (!taos || !tecnico || !site || !dataInicio || !horaInicio || !dataFim || !horaFim || !totalHE || !acao) {
+      alert('Por favor, preencha todos os campos obrigatórios antes de gerar o carimbo.');
+      return;
+    }
+
+    calcularTotalHE();
+
+    const texto = `### CONTROLE E REGISTRO HE ###
+
+TA/OS: ${taos}
+Técnico: ${tecnico}
+Site: ${site}
+
+Data Inicio: ${formatDate(dataInicio)}
+
+Hora Inicio: ${horaInicio}
+
+Data Fim: ${formatDate(dataFim)}
+
+Hora Fim: ${horaFim}
+
+Total HE: ${totalHE}
+
+Ação Solucionadora: ${acao}`;
+
+    document.getElementById('output').textContent = texto;
+    document.getElementById('btnWhatsapp').style.display = 'inline-block';
+
+
+    // Limpa os campos após 5 segundos
+    setTimeout(() => {
+      document.getElementById('taos').value = '';
+      document.getElementById('tecnicoSelect').selectedIndex = 0;
+      document.getElementById('siteSelect').selectedIndex = 0;
+      document.getElementById('dataInicio').value = '';
+      document.getElementById('horaInicio').value = '';
+      document.getElementById('dataFim').value = '';
+      document.getElementById('horaFim').value = '';
+      document.getElementById('totalHE').value = '';
+      document.getElementById('acaoSolucionadora').value = '';
+    }, 5000);
+  }
+
+  window.onload = () => {
+    let tecnicos = carregarLista(chaveTecnicos);
+    if (!tecnicos.includes('Jhonny Domingues')) {
+      tecnicos.push('Jhonny Domingues');
+      salvarLista(chaveTecnicos, tecnicos);
+    }
+    popularSelect('tecnicoSelect', tecnicos, 'Insira o nome do técnico');
+
+    let sites = carregarLista(chaveSites);
+    if (!sites.includes('A22X w1904')) {
+      sites.push('A22X w1904');
+      salvarLista(chaveSites, sites);
+    }
+    popularSelect('siteSelect', sites, 'Insira o site');
+
+    document.getElementById('taos').value = '';
+    document.getElementById('dataInicio').value = '';
+    document.getElementById('horaInicio').value = '';
+    document.getElementById('dataFim').value = '';
+    document.getElementById('horaFim').value = '';
+    document.getElementById('totalHE').value = '';
+    document.getElementById('acaoSolucionadora').value = '';
+    document.getElementById('output').textContent = '';
+  };
+  function compartilharWhatsapp() {
+  const texto = document.getElementById('output').textContent;
+  if (!texto) {
+    alert('Nada para compartilhar!');
+    return;
+  }
+
+  const mensagem = encodeURIComponent(texto);
+  const link = `https://wa.me/?text=${mensagem}`;
+  window.open(link, '_blank');
+}
+
+</script>
+<footer style="font-size: 0.75em; color: #666; text-align: center; margin-top: 20px;">
+  © Desenvolvido por Alexandre Giordan Marafigo
+</footer>
+</body>
+</html>
