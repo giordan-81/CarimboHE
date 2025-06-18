@@ -98,8 +98,8 @@
     }
   </style>
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon-192.png" type="image/png">
-  <meta name="theme-color" content="#222222">
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#222222" />
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js');
@@ -161,8 +161,6 @@
 
 <pre id="output"></pre>
 <button id="btnWhatsapp" style="display:none; margin-top: 10px;" onclick="compartilharWhatsapp()">Compartilhar via WhatsApp</button>
-
-
 
 <script>
   const chaveTecnicos = 'listaTecnicosHE';
@@ -226,12 +224,10 @@
     adicionarItem(chaveSites, 'novoSite', 'siteSelect', 'Site', 'Insira o site');
   }
 
+  // Corrigida para evitar problema de timezone, pegando direto do input yyyy-mm-dd sem criar objeto Date
   function formatDate(dateString) {
     if (!dateString) return '';
-    const d = new Date(dateString);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
+    const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
   }
 
@@ -304,7 +300,6 @@ Ação Solucionadora: ${acao}`;
     document.getElementById('output').textContent = texto;
     document.getElementById('btnWhatsapp').style.display = 'inline-block';
 
-
     // Limpa os campos após 5 segundos
     setTimeout(() => {
       document.getElementById('taos').value = '';
@@ -321,16 +316,16 @@ Ação Solucionadora: ${acao}`;
 
   window.onload = () => {
     let tecnicos = carregarLista(chaveTecnicos);
-     if (!tecnicos.includes('Alexandre Giordan Marafigo')) {
-     tecnicos.push('Alexandre Giordan Marafigo');
-     salvarLista(chaveTecnicos, tecnicos);
-     }
-     popularSelect('tecnicoSelect', tecnicos, 'Insira o nome do técnico');
+    if (!tecnicos.includes('Alexandre Giordan Marafigo')) {
+      tecnicos.push('Alexandre Giordan Marafigo');
+      salvarLista(chaveTecnicos, tecnicos);
+    }
+    popularSelect('tecnicoSelect', tecnicos, 'Insira o nome do técnico');
 
-     let sites = carregarLista(chaveSites);
-     if (!sites.includes('SC_Z55')) {
-     sites.push('SC_Z55');
-     salvarLista(chaveSites, sites);
+    let sites = carregarLista(chaveSites);
+    if (!sites.includes('SC_Z55')) {
+      sites.push('SC_Z55');
+      salvarLista(chaveSites, sites);
     }
     popularSelect('siteSelect', sites, 'Insira o site');
 
@@ -343,18 +338,18 @@ Ação Solucionadora: ${acao}`;
     document.getElementById('acaoSolucionadora').value = '';
     document.getElementById('output').textContent = '';
   };
+
   function compartilharWhatsapp() {
-  const texto = document.getElementById('output').textContent;
-  if (!texto) {
-    alert('Nada para compartilhar!');
-    return;
+    const texto = document.getElementById('output').textContent;
+    if (!texto) {
+      alert('Nada para compartilhar!');
+      return;
+    }
+
+    const mensagem = encodeURIComponent(texto);
+    const link = `https://wa.me/?text=${mensagem}`;
+    window.open(link, '_blank');
   }
-
-  const mensagem = encodeURIComponent(texto);
-  const link = `https://wa.me/?text=${mensagem}`;
-  window.open(link, '_blank');
-}
-
 </script>
 <footer style="font-size: 0.75em; color: #666; text-align: center; margin-top: 20px;">
   © Desenvolvido por Alexandre Giordan Marafigo
